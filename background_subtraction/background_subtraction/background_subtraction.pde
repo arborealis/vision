@@ -10,15 +10,19 @@ OpenCV opencv;
 Capture cam;
 Mat avg, frame, diff;
 PImage img;
+int start_time = millis();
+int count = 0;
 
 void setup() {
-  cam = new Capture(this, 640, 480);
-  size(cam.width, cam.height);
-  opencv = new OpenCV(this, cam.width, cam.height);
+  frameRate(60);
+  size(640, 480);
+  
+  cam = new Capture(this, width, height);
+  img = new PImage(width, height);
+  opencv = new OpenCV(this, width, height);
   //opencv.useGray();
 
   cam.start();
-  frameRate(30);
   opencv.loadImage(cam);
 
   frame = opencv.getGray();
@@ -29,7 +33,8 @@ void setup() {
 }
 
 void draw() {
-  scale(2);  
+  //scale(2);  
+  cam.read();
   opencv.loadImage(cam);
   
   frame = opencv.getGray();
@@ -38,10 +43,16 @@ void draw() {
   Imgproc.accumulateWeighted(frame, avg, 0.1);
   Core.subtract(frame, avg, diff);
   Core.convertScaleAbs(diff, diff);
-//
-//  opencv.toPImage(diff, img);
-////  arrayCopy(diff, img.pixels);
-////  img.updatePixels();
-//  image(img,0,0);
+  
+  opencv.toPImage(diff, img);
+  image(img,0,0);
+  count++;
+  
+  if (millis() - start_time > 5000) {
+    double fps = (float)count / (millis() - start_time) * 1000;
+    println("Effect framerate: " + fps + "fps");
+    start_time = millis();
+    count = 0;
+  }
 }
 
