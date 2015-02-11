@@ -4,7 +4,7 @@ import numpy as np
 import time
 
 FPS = 30
-WIDTH, HEIGHT = 640, 480
+WIDTH, HEIGHT = 1280, 720
 
 if __name__ == "__main__":
     cam = cv2.VideoCapture(0)
@@ -15,21 +15,17 @@ if __name__ == "__main__":
         start_time = time.time()
         last_update = time.time()
         _, f = cam.read()
-        avg = np.float32(f)
+        prev = np.float32(f)
 
         # loop over images and estimate background 
         count = 0
         while True:
-            #print time.time() - last_update
-            #if time.time() - last_update < 1.0/FPS:
-            #    continue
-
             _,f = cam.read()
 
-            cv2.accumulateWeighted(f,avg,0.1)
-            res = cv2.convertScaleAbs(f-avg)
+            #cv2.accumulateWeighted(f,avg,0.1)
+            res = cv2.convertScaleAbs(f-prev)
 
-            cv2.imshow('avg',res)
+            cv2.imshow('diff',res)
 
             last_update = time.time()
             count += 1

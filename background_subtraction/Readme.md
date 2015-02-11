@@ -1,8 +1,8 @@
 Background subtraction proof of concept
 
-Framerates @ 640x480:
-* Python: Maxes out at 15fps seemingly due to camera frame rate restrictions
-* Processing: 30fps at 76% cpu, maxes out at 52fps at 140% cpu
-* OpenFrameworks c++: Also maxes out at 15fps due to camera framerate restrictions
+Cpu usage at 15fps (the only refresh rate my Macbook Air laptop camera seems to support):
+* Processing: 640x480: 49%; 1280x720: 140%
+* Python: 640x480: 32%; 1280x720: 80%
+* OpenFrameworks c++: 640x480: 18%; 1280x720: 30%
 
 
