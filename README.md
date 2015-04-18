@@ -1,5 +1,4 @@
-# entoptic
-Known as visual effects whose source is within the eye itself.
+# Arborealis Vision
 
 ## Installing OpenCV & python on mac
 * brew tap homebrew/science
