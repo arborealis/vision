@@ -48,6 +48,10 @@ osc/OscOutboundPacketStream.cpp
 ADD_EXECUTABLE(sim sim.cpp)
 TARGET_LINK_LIBRARIES(sim oscpack ${LIBS})
 
+ADD_EXECUTABLE(OscDump OscDump.cpp)
+TARGET_LINK_LIBRARIES(OscDump oscpack ${LIBS})
+
+
 
 
 

@@ -53,13 +53,48 @@ CMAKE_SOURCE_DIR = /home/dsel/code/vision/entoptic-sim
 CMAKE_BINARY_DIR = /home/dsel/code/vision/entoptic-sim
 
 #=============================================================================
+# Target rules for target CMakeFiles/OscDump.dir
+
+# All Build rule for target.
+CMakeFiles/OscDump.dir/all: CMakeFiles/oscpack.dir/all
+	$(MAKE) -f CMakeFiles/OscDump.dir/build.make CMakeFiles/OscDump.dir/depend
+	$(MAKE) -f CMakeFiles/OscDump.dir/build.make CMakeFiles/OscDump.dir/build
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/dsel/code/vision/entoptic-sim/CMakeFiles  1
+	@echo "Built target OscDump"
+.PHONY : CMakeFiles/OscDump.dir/all
+
+# Include target in all.
+all: CMakeFiles/OscDump.dir/all
+.PHONY : all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/OscDump.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/dsel/code/vision/entoptic-sim/CMakeFiles 8
+	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/OscDump.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/dsel/code/vision/entoptic-sim/CMakeFiles 0
+.PHONY : CMakeFiles/OscDump.dir/rule
+
+# Convenience name for target.
+OscDump: CMakeFiles/OscDump.dir/rule
+.PHONY : OscDump
+
+# clean rule for target.
+CMakeFiles/OscDump.dir/clean:
+	$(MAKE) -f CMakeFiles/OscDump.dir/build.make CMakeFiles/OscDump.dir/clean
+.PHONY : CMakeFiles/OscDump.dir/clean
+
+# clean rule for target.
+clean: CMakeFiles/OscDump.dir/clean
+.PHONY : clean
+
+#=============================================================================
 # Target rules for target CMakeFiles/oscpack.dir
 
 # All Build rule for target.
 CMakeFiles/oscpack.dir/all:
 	$(MAKE) -f CMakeFiles/oscpack.dir/build.make CMakeFiles/oscpack.dir/depend
 	$(MAKE) -f CMakeFiles/oscpack.dir/build.make CMakeFiles/oscpack.dir/build
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/dsel/code/vision/entoptic-sim/CMakeFiles  1 2 3 4 5 6 7
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/dsel/code/vision/entoptic-sim/CMakeFiles  2 3 4 5 6 7 8
 	@echo "Built target oscpack"
 .PHONY : CMakeFiles/oscpack.dir/all
 
@@ -94,7 +129,7 @@ clean: CMakeFiles/oscpack.dir/clean
 CMakeFiles/sim.dir/all: CMakeFiles/oscpack.dir/all
 	$(MAKE) -f CMakeFiles/sim.dir/build.make CMakeFiles/sim.dir/depend
 	$(MAKE) -f CMakeFiles/sim.dir/build.make CMakeFiles/sim.dir/build
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/dsel/code/vision/entoptic-sim/CMakeFiles  8
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/dsel/code/vision/entoptic-sim/CMakeFiles  9
 	@echo "Built target sim"
 .PHONY : CMakeFiles/sim.dir/all
 

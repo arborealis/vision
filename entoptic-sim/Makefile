@@ -99,6 +99,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named OscDump
+
+# Build rule for target.
+OscDump: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 OscDump
+.PHONY : OscDump
+
+# fast build rule for target.
+OscDump/fast:
+	$(MAKE) -f CMakeFiles/OscDump.dir/build.make CMakeFiles/OscDump.dir/build
+.PHONY : OscDump/fast
+
+#=============================================================================
 # Target rules for targets named oscpack
 
 # Build rule for target.
@@ -123,6 +136,30 @@ sim: cmake_check_build_system
 sim/fast:
 	$(MAKE) -f CMakeFiles/sim.dir/build.make CMakeFiles/sim.dir/build
 .PHONY : sim/fast
+
+OscDump.o: OscDump.cpp.o
+.PHONY : OscDump.o
+
+# target to build an object file
+OscDump.cpp.o:
+	$(MAKE) -f CMakeFiles/OscDump.dir/build.make CMakeFiles/OscDump.dir/OscDump.cpp.o
+.PHONY : OscDump.cpp.o
+
+OscDump.i: OscDump.cpp.i
+.PHONY : OscDump.i
+
+# target to preprocess a source file
+OscDump.cpp.i:
+	$(MAKE) -f CMakeFiles/OscDump.dir/build.make CMakeFiles/OscDump.dir/OscDump.cpp.i
+.PHONY : OscDump.cpp.i
+
+OscDump.s: OscDump.cpp.s
+.PHONY : OscDump.s
+
+# target to generate assembly for a file
+OscDump.cpp.s:
+	$(MAKE) -f CMakeFiles/OscDump.dir/build.make CMakeFiles/OscDump.dir/OscDump.cpp.s
+.PHONY : OscDump.cpp.s
 
 ip/IpEndpointName.o: ip/IpEndpointName.cpp.o
 .PHONY : ip/IpEndpointName.o
@@ -322,10 +359,14 @@ help:
 	@echo "... all (the default if no target is provided)"
 	@echo "... clean"
 	@echo "... depend"
+	@echo "... OscDump"
 	@echo "... edit_cache"
 	@echo "... oscpack"
 	@echo "... rebuild_cache"
 	@echo "... sim"
+	@echo "... OscDump.o"
+	@echo "... OscDump.i"
+	@echo "... OscDump.s"
 	@echo "... ip/IpEndpointName.o"
 	@echo "... ip/IpEndpointName.i"
 	@echo "... ip/IpEndpointName.s"
