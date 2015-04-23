@@ -12,27 +12,26 @@
   #define CAP_PROP_FRAME_HEIGHT CV_CAP_PROP_FRAME_HEIGHT
 #endif
 
-int main(int argc, char* argv[])
-{
-   if( argc >= 2 && std::strcmp( argv[1], "-h" ) == 0 ){
+int main(int argc, char* argv[]) {
+    if (argc >= 2 && std::strcmp(argv[1], "-h") == 0) {
         std::cout << "usage: entoptic [hostname [port]]\n";
         return 0;
     }
 
-    const char *address = "127.0.0.1";
-    if( argc >= 2 )
+    const char* address = "127.0.0.1";
+    if (argc >= 2)
         address = argv[1];
 
     int port = 7000;
-    if( argc >= 3 )
-        port = std::atoi( argv[2] );
+    if (argc >= 3)
+        port = std::atoi(argv[2]);
 
     // OSC setup
     (void) argc; // suppress unused parameter warnings
     (void) argv; // suppress unused parameter warnings
-    UdpTransmitSocket transmitSocket( IpEndpointName( address, port ) );
+    UdpTransmitSocket transmitSocket(IpEndpointName(address, port));
     char buffer[OUTPUT_BUFFER_SIZE];
-    osc::OutboundPacketStream p( buffer, OUTPUT_BUFFER_SIZE );
+    osc::OutboundPacketStream p(buffer, OUTPUT_BUFFER_SIZE);
 
 
 
@@ -67,13 +66,13 @@ int main(int argc, char* argv[])
 
         // OSC stuff
         p.Clear();
-        p << osc::BeginBundleImmediate << osc::BeginMessage( "/test1" ) 
+        p << osc::BeginBundleImmediate << osc::BeginMessage("/test1") 
             << true << 23 << (float)3.1415 << "hello" << osc::EndMessage
-        << osc::BeginMessage( "/test2" ) 
+        << osc::BeginMessage("/test2") 
             << true << 24 << (float)10.8 << "world" << osc::EndMessage
         << osc::EndBundle;
     
-        transmitSocket.Send( p.Data(), p.Size() );
+        transmitSocket.Send(p.Data(), p.Size());
 
 
 
