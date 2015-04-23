@@ -31,30 +31,37 @@ int main(int argc, char* argv[]) {
     char buffer[OUTPUT_BUFFER_SIZE];
     osc::OutboundPacketStream p(buffer, OUTPUT_BUFFER_SIZE);
 
-    cv::VideoCapture cap(0); // open the video camera no. 0
+    // open the video camera no. 0
+    cv::VideoCapture cap(0);
 
-    if (!cap.isOpened()) {  // if not success, exit program
+    // if not success, exit program
+    if (!cap.isOpened()) {
         std::cout << "Cannot open the video cam" << std::endl;
         return -1;
     }
 
-    double dWidth = cap.get(CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
-    double dHeight = cap.get(CAP_PROP_FRAME_HEIGHT); //get the height of frames of the video
+    // get the width of frames of the video
+    double dWidth = cap.get(CAP_PROP_FRAME_WIDTH);
+    // get the height of frames of the video
+    double dHeight = cap.get(CAP_PROP_FRAME_HEIGHT);
 
     std::cout << "Frame size : " << dWidth << " x " << dHeight << std::endl;
 
-    cv::namedWindow("MyVideo", cv::WINDOW_AUTOSIZE); //create a window called "MyVideo"
+    //create a window called "MyVideo"
+    cv::namedWindow("MyVideo", cv::WINDOW_AUTOSIZE); 
 
     while (true) {
         cv::Mat frame;
-        bool bSuccess = cap.read(frame); // read a new frame from video
-
-        if (!bSuccess) { //if not success, break loop
+        // read a new frame from video
+        bool bSuccess = cap.read(frame);
+        // if not success, break loop
+        if (!bSuccess) { 
             std::cout << "Cannot read a frame from video stream" << std::endl;
             break;
         }
 
-        imshow("MyVideo", frame); //show the frame in "MyVideo" window
+        // show the frame in "MyVideo" window
+        imshow("MyVideo", frame); 
 
         // OSC stuff
         p.Clear();
@@ -69,7 +76,9 @@ int main(int argc, char* argv[]) {
     
         transmitSocket.Send(p.Data(), p.Size());
 
-        if (cv::waitKey(30) == 27) { //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
+        // wait for 'esc' key press for 30ms.
+        // If 'esc' key is pressed, break loop
+        if (cv::waitKey(30) == 27) { 
             std::cout << "esc key is pressed by user" << std::endl;
             break; 
         }
