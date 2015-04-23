@@ -5,8 +5,6 @@
 #include "osc/OscOutboundPacketStream.h"
 #include "ip/UdpSocket.h"
 
-#define ADDRESS "127.0.0.1"
-#define PORT 7000
 #define OUTPUT_BUFFER_SIZE 1024
 
 using namespace std;
@@ -15,19 +13,32 @@ using namespace cv;
 int main(int argc, char* argv[])
 {
 
+   if( argc >= 2 && std::strcmp( argv[1], "-h" ) == 0 ){
+        std::cout << "usage: entoptic [hostname [port]]\n";
+        return 0;
+    }
+
+    const char *address = "127.0.0.1";
+    if( argc >= 2 )
+        address = argv[1];
+
+    int port = 7000;
+    if( argc >= 3 )
+        port = std::atoi( argv[2] );
+
     // OSC setup
     (void) argc; // suppress unused parameter warnings
     (void) argv; // suppress unused parameter warnings
-    UdpTransmitSocket transmitSocket( IpEndpointName( ADDRESS, PORT ) );
+    UdpTransmitSocket transmitSocket( IpEndpointName( address, port ) );
     char buffer[OUTPUT_BUFFER_SIZE];
     osc::OutboundPacketStream p( buffer, OUTPUT_BUFFER_SIZE );
 
 
 
-    VideoCapture cap(0); // open the video camera no. 0
+     VideoCapture cap(0); // open the video camera no. 0
 
-    if (!cap.isOpened())  // if not success, exit program
-    {
+     if (!cap.isOpened())  // if not success, exit program
+     {
         cout << "Cannot open the video cam" << endl;
         return -1;
     }
