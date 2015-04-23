@@ -4,29 +4,50 @@ import cv
 import time
 import numpy
 
+import picamera
+import picamera.array
+
+# capture frames from the camera
+#for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+#	# grab the raw NumPy array representing the image, then initialize the timestamp
+#	# and occupied/unoccupied text
+#	image = frame.array
+#
+#	# show the frame
+#	cv2.imshow("Frame", image)
+#	key = cv2.waitKey(1) & 0xFF
+#
+#	# clear the stream in preparation for the next frame
+#	rawCapture.truncate(0)
+#
+#	# if the `q` key was pressed, break from the loop
+#	if key == ord("q"):
+#		break
+
+
+
 class Target:
     def __init__(self):
-        self.capture = cv.CaptureFromCAM(0)
-        cv.SetCaptureProperty(self.capture, cv.CV_CAP_PROP_FRAME_WIDTH, 320);
-        cv.SetCaptureProperty(self.capture, cv.CV_CAP_PROP_FRAME_HEIGHT, 240);
-        frame = cv.QueryFrame(self.capture)
-        frame_size = cv.GetSize(frame)
-
-        frame = cv.QueryFrame(self.capture)
+        camera = picamera.PiCamera()
+        camera.resolution = (320, 240)
+        camera.framerate = 15
+        rawCapture = picamera.array.PiRGBArray(camera, size=(320, 240))
+        # allow the camera to warmup
+        time.sleep(0.1)
         cv.NamedWindow("Target", 1)
 
     def run(self):
-        frame = cv.QueryFrame(self.capture)
-        frame_size = cv.GetSize(frame)
+        frames = camera.capture_continuous(rawCapture, format="bgr", use_video_port=True)
         
-        # Capture the first frame from webcam for image properties
-        display_image = cv.QueryFrame(self.capture)
+        frame = frames.next().array
+        display_image = cv.CreateImageHeader((frame.shape[1], frame.shape[0]), cv.IPL_DEPTH_8U, 3)
+        cv.SetData(display_image, frame.tostring(), frame.dtype.itemsize * 3 * frame.shape[1])
         
         # Greyscale image, thresholded to create the motion mask:
-        grey_image = cv.CreateImage(cv.GetSize(frame), cv.IPL_DEPTH_8U, 1)
+        grey_image = cv.CreateImage((320, 240), cv.IPL_DEPTH_8U, 1)
         
         # The RunningAvg() function requires a 32-bit or 64-bit image...
-        running_average_image = cv.CreateImage(cv.GetSize(frame), cv.IPL_DEPTH_32F, 3)
+        running_average_image = cv.CreateImage((320, 240), cv.IPL_DEPTH_32F, 3)
         # ...but the AbsDiff() function requires matching image depths:
         running_average_in_display_color_depth = cv.CloneImage(display_image)
         
@@ -39,7 +60,9 @@ class Target:
         
         while True:
             # Capture frame from webcam
-            camera_image = cv.QueryFrame(self.capture)
+            frame = frames.next().array
+            camera_image = cv.CreateImageHeader((frame.shape[1], frame.shape[0]), cv.IPL_DEPTH_8U, 3)
+            cv.SetData(camera_image, frame.tostring(), frame.dtype.itemsize * 3 * frame.shape[1])
             
             frame_count += 1
             frame_t0 = time.time()
