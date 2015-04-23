@@ -7,12 +7,16 @@
 
 #define OUTPUT_BUFFER_SIZE 1024
 
+#if CV_MAJOR_VERSION < 3
+  #define CAP_PROP_FRAME_WIDTH CV_CAP_PROP_FRAME_WIDTH
+  #define CAP_PROP_FRAME_HEIGHT CV_CAP_PROP_FRAME_HEIGHT
+#endif
+
 using namespace std;
 using namespace cv;
 
 int main(int argc, char* argv[])
 {
-
    if( argc >= 2 && std::strcmp( argv[1], "-h" ) == 0 ){
         std::cout << "usage: entoptic [hostname [port]]\n";
         return 0;
