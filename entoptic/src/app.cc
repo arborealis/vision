@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Frame size : " << dWidth << " x " << dHeight << std::endl;
 
-    //create a window called "MyVideo"
+    // create a window called "MyVideo"
     cv::namedWindow("MyVideo", cv::WINDOW_AUTOSIZE); 
 
     while (true) {
