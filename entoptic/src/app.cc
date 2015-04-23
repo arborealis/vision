@@ -27,18 +27,13 @@ int main(int argc, char* argv[]) {
         port = std::atoi(argv[2]);
 
     // OSC setup
-    (void) argc; // suppress unused parameter warnings
-    (void) argv; // suppress unused parameter warnings
     UdpTransmitSocket transmitSocket(IpEndpointName(address, port));
     char buffer[OUTPUT_BUFFER_SIZE];
     osc::OutboundPacketStream p(buffer, OUTPUT_BUFFER_SIZE);
 
+    cv::VideoCapture cap(0); // open the video camera no. 0
 
-
-     cv::VideoCapture cap(0); // open the video camera no. 0
-
-     if (!cap.isOpened())  // if not success, exit program
-     {
+    if (!cap.isOpened()) {  // if not success, exit program
         std::cout << "Cannot open the video cam" << std::endl;
         return -1;
     }
@@ -48,40 +43,36 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Frame size : " << dWidth << " x " << dHeight << std::endl;
 
-    namedWindow("MyVideo", cv::WINDOW_AUTOSIZE); //create a window called "MyVideo"
+    cv::namedWindow("MyVideo", cv::WINDOW_AUTOSIZE); //create a window called "MyVideo"
 
-    while (1)
-    {
+    while (true) {
         cv::Mat frame;
         bool bSuccess = cap.read(frame); // read a new frame from video
 
-         if (!bSuccess) //if not success, break loop
-        {
-             std::cout << "Cannot read a frame from video stream" << std::endl;
-             break;
+        if (!bSuccess) { //if not success, break loop
+            std::cout << "Cannot read a frame from video stream" << std::endl;
+            break;
         }
 
         imshow("MyVideo", frame); //show the frame in "MyVideo" window
 
-
         // OSC stuff
         p.Clear();
-        p << osc::BeginBundleImmediate << osc::BeginMessage("/test1") 
-            << true << 23 << (float)3.1415 << "hello" << osc::EndMessage
-        << osc::BeginMessage("/test2") 
-            << true << 24 << (float)10.8 << "world" << osc::EndMessage
+        p << osc::BeginBundleImmediate
+            << osc::BeginMessage("/test1") 
+                << true << 23 << (float)3.1415 << "hello"
+            << osc::EndMessage
+            << osc::BeginMessage("/test2") 
+                << true << 24 << (float)10.8 << "world"
+            << osc::EndMessage
         << osc::EndBundle;
     
         transmitSocket.Send(p.Data(), p.Size());
 
-
-
-        if (cv::waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
-       {
+        if (cv::waitKey(30) == 27) { //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
             std::cout << "esc key is pressed by user" << std::endl;
             break; 
-       }
+        }
     }
     return 0;
-
 }
