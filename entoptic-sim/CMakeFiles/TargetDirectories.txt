@@ -1,0 +1,2 @@
+/home/dsel/code/vision/entoptic-sim/CMakeFiles/oscpack.dir
+/home/dsel/code/vision/entoptic-sim/CMakeFiles/sim.dir
