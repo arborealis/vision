@@ -15,6 +15,8 @@ ELSE(WIN32)
  set(IpSystemTypePath ip/posix)
 ENDIF(WIN32)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 ADD_LIBRARY(oscpack 
 
 ip/IpEndpointName.h
