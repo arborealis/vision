@@ -28,6 +28,6 @@ The cell values start at the left corner of the instrument/camera grid and read 
 
 ## Usage
 * ```./bin/sim [optional ip address of server] [optional port]```
- * the ip address deafults to 127.0.0.1, and port to 7000
+ * the ip address deafults to 127.0.0.1, and port to 7000, e.g. ```./bin/sim 127.0.0.1 7000``` or just ```./bin/sim``` to get the defaults.
 * if you want to see the raw data being spit out, open the same directory in a different terminal window and run ```./bin/OscDump```
 
