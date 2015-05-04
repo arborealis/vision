@@ -9,6 +9,8 @@ The cell values start at the left corner of the instrument/camera grid and read 
 
 
 ## Requirements
+Only tested on mac. Your milage may vary translating these steps to other environments.
+
 * homebrew
   * ```ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"```
 * git
