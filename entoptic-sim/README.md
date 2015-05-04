@@ -1,8 +1,10 @@
 # Entoptic Sim
 
 ## Requirements
+* homebrew ( ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" )
 * git (brew install git)
 * cmake (brew install cmake)
+* boost (brew install boost)
 
 
 ## Installation
