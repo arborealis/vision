@@ -72,7 +72,7 @@ int main (int argc, char** argv) {
             }
         }
 
-        cv::imshow("motion", vis);
+        cv::imshow("motion", motion_mask);
         prev_frame = frame.clone();
         if (cv::waitKey(30) >= 0) {
             std::cout << "esc key is pressed by user" << std::endl;
