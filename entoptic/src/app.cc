@@ -15,6 +15,9 @@ int DEFAULT_THRESHOLD = 32;
 float MAX_TIME_DELTA = 12500.0;
 float MIN_TIME_DELTA = 5;
 
+int GRID_WIDTH = 20;
+int GRID_HEIGHT = 10;
+
 int main (int argc, char** argv) {
     cv::namedWindow("motion", CV_WINDOW_AUTOSIZE);
 
@@ -38,7 +41,7 @@ int main (int argc, char** argv) {
     cv::Mat mg_orient(h, w, CV_32FC1, cv::Scalar(0,0,0));
     cv::Mat seg_mask(h, w, CV_32FC1, cv::Scalar(0,0,0));
     std::vector<cv::Rect> seg_bounds;
-    cv::Mat vis(h, w, CV_32FC3);
+    cv::Mat visual(h, w, CV_32FC3);
     cv::Mat silh_roi, orient_roi, mask_roi, mhi_roi;
 
     while (1) {
@@ -72,7 +75,22 @@ int main (int argc, char** argv) {
             }
         }
 
-        cv::imshow("motion", motion_mask);
+        visual = motion_mask.clone();
+        // Paint grid lines on screen.
+        for (int i=1; i<GRID_HEIGHT; ++i) {
+            cv::line(visual,
+                     cv::Point2i(0, int(i * (h / GRID_HEIGHT))),
+                     cv::Point2i(w, int(i * (h / GRID_HEIGHT))),
+                     cv::Scalar(255, 255, 255));
+        }
+        for (int i=1; i<GRID_WIDTH; ++i) {
+            cv::line(visual,
+                     cv::Point2i(int(i * (w / GRID_WIDTH)), 0),
+                     cv::Point2i(int(i * (w / GRID_WIDTH)), h),
+                     cv::Scalar(255, 255, 255));
+        }
+
+        cv::imshow("motion", visual);
         prev_frame = frame.clone();
         if (cv::waitKey(30) >= 0) {
             std::cout << "esc key is pressed by user" << std::endl;
