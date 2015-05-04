@@ -1,0 +1,14 @@
+# build leftovers
+bin
+build
+lib
+
+# cmake
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
+# Mac
+.DS_Store

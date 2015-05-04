@@ -1,1 +1,0 @@
-/usr/bin/c++    -std=c++11    CMakeFiles/sim.dir/sim.cpp.o  -o sim -rdynamic liboscpack.a 
