@@ -1,6 +1,7 @@
 # build leftovers
 bin
 build
+lib
 
 # cmake
 CMakeCache.txt
