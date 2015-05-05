@@ -15,8 +15,8 @@ int DEFAULT_THRESHOLD = 32;
 float MAX_TIME_DELTA = 12500.0;
 float MIN_TIME_DELTA = 5;
 
-int GRID_WIDTH = 20;
 int GRID_HEIGHT = 10;
+int GRID_WIDTH = 20;
 
 int main (int argc, char** argv) {
     cv::namedWindow("motion", CV_WINDOW_AUTOSIZE);
@@ -75,19 +75,62 @@ int main (int argc, char** argv) {
             }
         }
 
+        int GRID_SQUARE_HEIGHT = (h / GRID_HEIGHT); // 480 / 10 = 48
+        int GRID_SQUARE_WIDTH = (w / GRID_WIDTH);   // 640 / 20 = 32
+
+        // Check grid squares for activation.
+        cv::Mat activation = cv::Mat::zeros(GRID_HEIGHT+1, GRID_WIDTH+1,
+                                            CV_32F);
+        for (int i=0; i<GRID_HEIGHT; ++i) {
+            for (int j=0; j<GRID_WIDTH; ++j) {
+                cv::Mat sub_mat = motion_mask(cv::Rect(
+                    int(j * GRID_SQUARE_WIDTH),
+                    int(i * GRID_SQUARE_HEIGHT),
+                    int(GRID_SQUARE_WIDTH),
+                    int(GRID_SQUARE_HEIGHT)));
+                double total = (double)cv::sum(sub_mat)[0];
+                activation.at<double>(i, j) = total / (double)(
+                    sub_mat.rows * 255 * sub_mat.cols);
+            }
+        }
+        //std::cout << activation << std::endl;
+
         visual = motion_mask.clone();
         // Paint grid lines on screen.
         for (int i=1; i<GRID_HEIGHT; ++i) {
             cv::line(visual,
-                     cv::Point2i(0, int(i * (h / GRID_HEIGHT))),
-                     cv::Point2i(w, int(i * (h / GRID_HEIGHT))),
+                     cv::Point2i(0, int(i * GRID_SQUARE_HEIGHT)),
+                     cv::Point2i(w, int(i * GRID_SQUARE_HEIGHT)),
                      cv::Scalar(255, 255, 255));
         }
         for (int i=1; i<GRID_WIDTH; ++i) {
             cv::line(visual,
-                     cv::Point2i(int(i * (w / GRID_WIDTH)), 0),
-                     cv::Point2i(int(i * (w / GRID_WIDTH)), h),
+                     cv::Point2i(int(i * GRID_SQUARE_WIDTH), 0),
+                     cv::Point2i(int(i * GRID_SQUARE_WIDTH), h),
                      cv::Scalar(255, 255, 255));
+        }
+        // Paint activated boxes.
+        for (int i=0; i<GRID_HEIGHT; ++i) {
+            for (int j=0; j<GRID_WIDTH; ++j) {
+                double activate_level = activation.at<double>(i, j);
+                if (activate_level < 0.5)
+                    continue;
+                cv::Mat active_rect(h, w, CV_32FC3);
+                cv::Rect display_rect(
+                    int(j * GRID_SQUARE_WIDTH),
+                    int(i * GRID_SQUARE_HEIGHT),
+                    int(GRID_SQUARE_WIDTH),
+                    int(GRID_SQUARE_HEIGHT));
+                cv::rectangle(
+                    visual,
+                    display_rect,
+                    cv::Scalar(255, 255, 255),
+                    CV_FILLED);
+                //std::cout << "active: " << display_rect;
+                //cv::addWeighted(visual, 1.0,
+                //                active_rect, activate_level,
+                //                0.0, visual);
+            }
         }
 
         cv::imshow("motion", visual);
