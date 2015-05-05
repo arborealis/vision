@@ -11,7 +11,7 @@
 #include <time.h>
 
 float MHI_DURATION = 0.05;
-int DEFAULT_THRESHOLD = 32;
+int DEFAULT_THRESHOLD = 16;
 float MAX_TIME_DELTA = 12500.0;
 float MIN_TIME_DELTA = 5;
 
@@ -22,8 +22,8 @@ int main (int argc, char** argv) {
     cv::namedWindow("motion", CV_WINDOW_AUTOSIZE);
 
     cv::VideoCapture cap(0);
-    cap.set(CV_CAP_PROP_FRAME_WIDTH, 640);
-    cap.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
+    cap.set(CV_CAP_PROP_FRAME_WIDTH, 800);
+    cap.set(CV_CAP_PROP_FRAME_HEIGHT, 600);
     if (!cap.isOpened()) {
         std::cerr << "Cannot open camera" << std::endl;
         return -1;
@@ -88,14 +88,17 @@ int main (int argc, char** argv) {
                     int(i * GRID_SQUARE_HEIGHT),
                     int(GRID_SQUARE_WIDTH),
                     int(GRID_SQUARE_HEIGHT)));
-                double total = (double)cv::sum(sub_mat)[0];
-                activation.at<double>(i, j) = total / (double)(
+                float total = (float)cv::sum(sub_mat)[0];
+                activation.at<float>(i, j) = total / (float)(
                     sub_mat.rows * 255 * sub_mat.cols);
             }
         }
-        //std::cout << activation << std::endl;
 
-        visual = motion_mask.clone();
+        visual = frame.clone();
+        cv::addWeighted(visual, 0.0,
+                        frame, 0.8,
+                        0.0, visual);
+
         // Paint grid lines on screen.
         for (int i=1; i<GRID_HEIGHT; ++i) {
             cv::line(visual,
@@ -112,8 +115,8 @@ int main (int argc, char** argv) {
         // Paint activated boxes.
         for (int i=0; i<GRID_HEIGHT; ++i) {
             for (int j=0; j<GRID_WIDTH; ++j) {
-                double activate_level = activation.at<double>(i, j);
-                if (activate_level < 0.5)
+                float activate_level = activation.at<float>(i, j);
+                if (activate_level < 0.1)
                     continue;
                 cv::Mat active_rect(h, w, CV_32FC3);
                 cv::Rect display_rect(
@@ -126,7 +129,6 @@ int main (int argc, char** argv) {
                     display_rect,
                     cv::Scalar(255, 255, 255),
                     CV_FILLED);
-                //std::cout << "active: " << display_rect;
                 //cv::addWeighted(visual, 1.0,
                 //                active_rect, activate_level,
                 //                0.0, visual);
