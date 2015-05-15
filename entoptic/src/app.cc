@@ -43,10 +43,10 @@ int main (int argc, char** argv) {
     int w = frame_size.width;
     double timestamp = 1000.0 * clock() / CLOCKS_PER_SEC;
     cv::Mat prev_frame = frame.clone();
-    cv::Mat motion_history(h, w, CV_32FC1, cv::Scalar(0,0,0));
-    cv::Mat mg_mask(h, w, CV_8UC1, cv::Scalar(0,0,0));
-    cv::Mat mg_orient(h, w, CV_32FC1, cv::Scalar(0,0,0));
-    cv::Mat seg_mask(h, w, CV_32FC1, cv::Scalar(0,0,0));
+    cv::Mat motion_history(h, w, CV_32FC1, cv::Scalar(0, 0, 0));
+    cv::Mat mg_mask(h, w, CV_8UC1, cv::Scalar(0, 0, 0));
+    cv::Mat mg_orient(h, w, CV_32FC1, cv::Scalar(0, 0, 0));
+    cv::Mat seg_mask(h, w, CV_32FC1, cv::Scalar(0, 0, 0));
     std::vector<cv::Rect> seg_bounds;
     cv::Mat visual(h, w, CV_32FC3);
     cv::Mat silh_roi, orient_roi, mask_roi, mhi_roi;
