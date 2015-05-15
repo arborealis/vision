@@ -9,6 +9,8 @@
 #include "opencv2/video/tracking.hpp"
 #include <math.h>
 #include <time.h>
+#include "osc/OscOutboundPacketStream.h"
+#include "ip/UdpSocket.h"
 
 float MHI_DURATION = 0.05;
 int DEFAULT_THRESHOLD = 16;
