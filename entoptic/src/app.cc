@@ -4,13 +4,18 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include <iostream>
-#include <stdio.h>
 #include <stdlib.h>
 #include "opencv2/video/tracking.hpp"
 #include <math.h>
 #include <time.h>
-#include "osc/OscOutboundPacketStream.h"
-#include "ip/UdpSocket.h"
+#include "oscpack/osc/OscOutboundPacketStream.h"
+#include "oscpack/ip/UdpSocket.h"
+#include <string>
+#include <sstream>
+#include <chrono>
+#include <thread>
+
+#define OUTPUT_BUFFER_SIZE 1024 * 4
 
 float MHI_DURATION = 0.05;
 int DEFAULT_THRESHOLD = 16;
@@ -21,6 +26,15 @@ int GRID_HEIGHT = 10;
 int GRID_WIDTH = 20;
 
 int main (int argc, char** argv) {
+    // OSC setup
+    const char* address = "127.0.0.1";
+    int port = 7000;
+    UdpTransmitSocket transmitSocket(IpEndpointName(address, port));
+    char buffer[OUTPUT_BUFFER_SIZE];
+    osc::OutboundPacketStream p(buffer, OUTPUT_BUFFER_SIZE);
+    std::string osc_address_str;
+    std::string osc_grid_data;
+
     cv::namedWindow("motion", CV_WINDOW_AUTOSIZE);
 
     cv::VideoCapture cap;
@@ -54,6 +68,7 @@ int main (int argc, char** argv) {
     cv::Mat silh_roi, orient_roi, mask_roi, mhi_roi;
 
     while (1) {
+        osc_grid_data = "";
         cap.read(frame);
         if (!frame.data) {
             if (is_video_file) {
@@ -126,12 +141,16 @@ int main (int argc, char** argv) {
                      cv::Point2i(int(i * GRID_SQUARE_WIDTH), h),
                      cv::Scalar(255, 255, 255));
         }
-        // Paint activated boxes.
+        // Paint activated boxes and construct osc grid.
         for (int i=0; i<GRID_HEIGHT; ++i) {
             for (int j=0; j<GRID_WIDTH; ++j) {
                 float activate_level = activation.at<float>(i, j);
-                if (activate_level < 0.1)
+                if (activate_level < 0.1) {
+                    osc_grid_data += "0,";
                     continue;
+                }
+                // construct osc string 
+                osc_grid_data += std::to_string(activate_level) + ",";
                 cv::Mat active_rect(h, w, CV_32FC3);
                 cv::Rect display_rect(
                     int(j * GRID_SQUARE_WIDTH),
@@ -149,8 +168,17 @@ int main (int argc, char** argv) {
             }
         }
 
+        // Send OSC packet
+        p.Clear();
+        p << osc::BeginMessage("/A/C1") 
+            << osc_grid_data.substr(0, osc_grid_data.size()-1).c_str()
+            << osc::EndMessage;
+        transmitSocket.Send(p.Data(), p.Size());
+
         cv::imshow("motion", visual);
         prev_frame = frame.clone();
+
+
         if (cv::waitKey(30) >= 0) {
             std::cout << "esc key is pressed by user" << std::endl;
             break; 

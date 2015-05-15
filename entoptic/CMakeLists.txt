@@ -1,5 +1,7 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
 PROJECT (entoptic)
 SET (APPLICATION_NAME "Entoptic")
 SET (APPLICATION_CODENAME "${PROJECT_NAME}")
@@ -19,29 +21,26 @@ SET (APPLICATION_ID "${APPLICATION_VENDOR_ID}.${PROJECT_NAME}")
 #
 SET (CMAKE_VERBOSE_MAKEFILE 0) # Use 1 for debugging, 0 for release
 
-#
-# Project Output Paths
-#
-SET (MAINFOLDER ${PROJECT_SOURCE_DIR})
-SET (EXECUTABLE_OUTPUT_PATH "${MAINFOLDER}/bin")
-SET (LIBRARY_OUTPUT_PATH "${MAINFOLDER}/lib")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-#
-# Project Search Paths
-#
-LIST (APPEND CMAKE_PREFIX_PATH "${MAINFOLDER}")
-LIST (APPEND CMAKE_PREFIX_PATH "${MAINFOLDER}/tools")
-LIST (APPEND CMAKE_PREFIX_PATH "${MAINFOLDER}/thirdparty")
-INCLUDE_DIRECTORIES("${MAINFOLDER}/include")
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 #
 # Locate Project Dependancies 
 #
+find_package( Boost REQUIRED COMPONENTS program_options regex )
+include_directories( ${Boost_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
+
 FIND_PACKAGE (OpenCV REQUIRED)
 INCLUDE_DIRECTORIES (${OpenCV_INCLUDE_DIRS})
 LINK_DIRECTORIES (${OpenCV_LIBRARY_DIRS})
 
-#
-# Add Build Targets
-#
-ADD_SUBDIRECTORY (src)
+# build the osc lib
+add_subdirectory(oscpack)
+
+# build the entoptic app
+add_subdirectory(src)
+
+
