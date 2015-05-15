@@ -23,11 +23,18 @@ int GRID_WIDTH = 20;
 int main (int argc, char** argv) {
     cv::namedWindow("motion", CV_WINDOW_AUTOSIZE);
 
-    cv::VideoCapture cap(0);
+    cv::VideoCapture cap;
+    bool is_video_file = false;
+    if (argc > 1) {
+        cap.open(argv[1]);
+        is_video_file = true;
+    } else {
+        cap.open(0);
+    }
     cap.set(CV_CAP_PROP_FRAME_WIDTH, 800);
     cap.set(CV_CAP_PROP_FRAME_HEIGHT, 600);
     if (!cap.isOpened()) {
-        std::cerr << "Cannot open camera" << std::endl;
+        std::cerr << "Cannot open video source" << std::endl;
         return -1;
     }
 
@@ -48,9 +55,14 @@ int main (int argc, char** argv) {
 
     while (1) {
         cap.read(frame);
-        if(!frame.data) {
-            std::cout << "camera stopped" << std::endl;
-            break;
+        if (!frame.data) {
+            if (is_video_file) {
+                cap.set(CV_CAP_PROP_POS_AVI_RATIO, 0);
+                continue;
+            } else {
+                std::cout << "camera stopped" << std::endl;
+                break;
+            }
         }
 
         cv::absdiff(frame, prev_frame, frame_diff);
