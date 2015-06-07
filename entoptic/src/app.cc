@@ -14,6 +14,7 @@
 #include <sstream>
 #include <chrono>
 #include <thread>
+#include <raspicam/raspicam_cv.h>
 
 #define OUTPUT_BUFFER_SIZE 1024 * 4
 
@@ -35,25 +36,22 @@ int main (int argc, char** argv) {
     std::string osc_address_str;
     std::string osc_grid_data;
 
-    cv::namedWindow("motion", CV_WINDOW_AUTOSIZE);
+    //cv::namedWindow("motion", CV_WINDOW_AUTOSIZE);
 
-    cv::VideoCapture cap;
     bool is_video_file = false;
-    if (argc > 1) {
-        cap.open(argv[1]);
-        is_video_file = true;
-    } else {
-        cap.open(0);
-    }
-    cap.set(CV_CAP_PROP_FRAME_WIDTH, 800);
-    cap.set(CV_CAP_PROP_FRAME_HEIGHT, 600);
+
+    raspicam::RaspiCam_Cv cap;
+    cap.set(CV_CAP_PROP_FRAME_WIDTH, 1296);
+    cap.set(CV_CAP_PROP_FRAME_HEIGHT, 972);
+    cap.open();
     if (!cap.isOpened()) {
         std::cerr << "Cannot open video source" << std::endl;
         return -1;
     }
 
     cv::Mat frame, frame_diff, gray_diff, motion_mask;
-    cap.read(frame);
+    cap.grab();
+    cap.retrieve(frame);
     cv::Size frame_size = frame.size();
     int h = frame_size.height;
     int w = frame_size.width;
@@ -67,9 +65,15 @@ int main (int argc, char** argv) {
     cv::Mat visual(h, w, CV_32FC3);
     cv::Mat silh_roi, orient_roi, mask_roi, mhi_roi;
 
+    int frame_count = 0;
+    time_t timer_begin, timer_end;
+    time (&timer_begin);
+
     while (1) {
+        ++frame_count;
         osc_grid_data = "";
-        cap.read(frame);
+	cap.grab();
+	cap.retrieve(frame);
         if (!frame.data) {
             if (is_video_file) {
                 cap.set(CV_CAP_PROP_POS_AVI_RATIO, 0);
@@ -175,15 +179,24 @@ int main (int argc, char** argv) {
             << osc::EndMessage;
         transmitSocket.Send(p.Data(), p.Size());
 
-        cv::imshow("motion", visual);
+        //cv::imshow("motion", visual);
         prev_frame = frame.clone();
 
-
+	if (frame_count > 100) break;
         if (cv::waitKey(30) >= 0) {
             std::cout << "esc key is pressed by user" << std::endl;
             break; 
         }
     }
+
+    time (&timer_end);
+    double seconds_elapsed = difftime (timer_end, timer_begin);
+    std::cout << seconds_elapsed << " seconds for "
+	      << frame_count << "  frames : FPS = "
+	      <<  (float)((float)(frame_count) / seconds_elapsed)
+	      << std::endl;
+
+    cap.release();
 
     return 0;
 }

@@ -37,6 +37,8 @@ FIND_PACKAGE (OpenCV REQUIRED)
 INCLUDE_DIRECTORIES (${OpenCV_INCLUDE_DIRS})
 LINK_DIRECTORIES (${OpenCV_LIBRARY_DIRS})
 
+find_package(raspicam REQUIRED)
+
 # build the osc lib
 add_subdirectory(oscpack)
 
