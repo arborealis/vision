@@ -35,7 +35,7 @@ int main (int argc, char** argv) {
     std::string osc_address_str;
     std::string osc_grid_data;
 
-    //cv::namedWindow("motion", CV_WINDOW_AUTOSIZE);
+    cv::namedWindow("motion", CV_WINDOW_AUTOSIZE);
 
     cv::VideoCapture cap;
     bool is_video_file = false;
@@ -179,7 +179,7 @@ int main (int argc, char** argv) {
             << osc::EndMessage;
         transmitSocket.Send(p.Data(), p.Size());
 
-        //cv::imshow("motion", visual);
+        cv::imshow("motion", visual);
         prev_frame = frame.clone();
 
 	++frame_count;
