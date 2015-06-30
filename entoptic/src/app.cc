@@ -67,6 +67,10 @@ int main (int argc, char** argv) {
     cv::Mat visual(h, w, CV_32FC3);
     cv::Mat silh_roi, orient_roi, mask_roi, mhi_roi;
 
+    int frame_count = 0;
+    time_t timer_begin, timer_end;
+    time (&timer_begin);
+
     while (1) {
         osc_grid_data = "";
         cap.read(frame);
@@ -178,12 +182,20 @@ int main (int argc, char** argv) {
         cv::imshow("motion", visual);
         prev_frame = frame.clone();
 
-
+	++frame_count;
+	if (frame_count > 50) break;
         if (cv::waitKey(30) >= 0) {
             std::cout << "esc key is pressed by user" << std::endl;
             break; 
         }
     }
+
+    time (&timer_end);
+    double seconds_elapsed = difftime (timer_end, timer_begin);
+    std::cout << seconds_elapsed << " seconds for "
+	      << frame_count << "  frames : FPS = "
+	      <<  (float)((float)(frame_count) / seconds_elapsed)
+	      << std::endl;
 
     return 0;
 }
