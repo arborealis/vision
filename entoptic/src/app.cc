@@ -26,6 +26,7 @@ float MIN_TIME_DELTA = 5;
 int GRID_HEIGHT = 8;
 int GRID_WIDTH = 8;
 
+float MIN_ACTIVATION = 0.1;
 float CUTOFF_STDDEV = 0.5;
 float ACTIVATION_DECAY = 0.6;
 
@@ -71,6 +72,7 @@ int main (int argc, char** argv) {
 
     std::stringstream osc_cam_id;
     osc_cam_id << "/Arbor/Camera/" << cam_num << "/";
+    cv::startWindowThread();
     cv::namedWindow(osc_cam_id.str().c_str(), CV_WINDOW_AUTOSIZE);
 
     cap.set(CV_CAP_PROP_FRAME_WIDTH, 800);
@@ -105,7 +107,6 @@ int main (int argc, char** argv) {
 
     while (1) {
         osc_data.clear();
-
 
         cap.read(frame);
         if (!frame.data) {
@@ -164,13 +165,13 @@ int main (int argc, char** argv) {
 
         cv::Scalar mean_activation;
         cv::Scalar stddev_activation;
-        cv::Mat mask = (activation > 0.1);
+        cv::Mat mask = (activation > MIN_ACTIVATION);
         cv::meanStdDev(activation, mean_activation, stddev_activation, mask);
 
         float cutoff_activation = (mean_activation.val[0] +
                                    stddev_activation.val[0] * CUTOFF_STDDEV);
-        if (cutoff_activation < 0.1) {
-            cutoff_activation = 0.1;
+        if (cutoff_activation < MIN_ACTIVATION) {
+            cutoff_activation = MIN_ACTIVATION;
         }
 
         cv::threshold(activation, activation, cutoff_activation, 1.0,
@@ -188,18 +189,26 @@ int main (int argc, char** argv) {
                         frame, 0.8,
                         0.0, visual);
 
-        // Paint grid lines on screen.
-        for (int i=1; i<GRID_HEIGHT; ++i) {
-            cv::line(visual,
-                     cv::Point2i(0, int(i * GRID_SQUARE_HEIGHT)),
-                     cv::Point2i(w, int(i * GRID_SQUARE_HEIGHT)),
-                     cv::Scalar(200, 200, 200));
-        }
-        for (int i=1; i<GRID_WIDTH; ++i) {
-            cv::line(visual,
-                     cv::Point2i(int(i * GRID_SQUARE_WIDTH), 0),
-                     cv::Point2i(int(i * GRID_SQUARE_WIDTH), h),
-                     cv::Scalar(200, 200, 200));
+        {
+            // Paint grid lines on screen.
+            cv::Mat buffer = cv::Mat::zeros(h, w, CV_8UC3);
+
+            for (int i=1; i<GRID_HEIGHT; ++i) {
+                cv::line(buffer,
+                         cv::Point2i(0, int(i * GRID_SQUARE_HEIGHT)),
+                         cv::Point2i(w, int(i * GRID_SQUARE_HEIGHT)),
+                         cv::Scalar(255, 255, 255));
+            }
+            for (int i=1; i<GRID_WIDTH; ++i) {
+                cv::line(buffer,
+                         cv::Point2i(int(i * GRID_SQUARE_WIDTH), 0),
+                         cv::Point2i(int(i * GRID_SQUARE_WIDTH), h),
+                         cv::Scalar(255, 255, 255));
+            }
+            cv::addWeighted(
+                visual, 1.0,
+                buffer, 0.3,
+                0.0, visual);
         }
 
         // Paint activated boxes and construct osc grid.
