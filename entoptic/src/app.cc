@@ -50,7 +50,6 @@ int main (int argc, char** argv) {
     char buffer[OUTPUT_BUFFER_SIZE];
     osc::OutboundPacketStream p(buffer, OUTPUT_BUFFER_SIZE);
     std::string osc_address_str;
-    std::vector<float> osc_data;
 
     cv::VideoCapture cap;
     bool is_video_file = false;
@@ -215,8 +214,6 @@ int main (int argc, char** argv) {
         for (int i=0; i<GRID_HEIGHT; ++i) {
             for (int j=0; j<GRID_WIDTH; ++j) {
                 float activate_level = active_grid.at<float>(i, j);
-                // construct osc string
-                osc_data.push_back(activate_level);
                 if (activate_level > 0.01) {
                     cv::Rect display_rect(
                         int(j * GRID_SQUARE_WIDTH),
@@ -240,8 +237,10 @@ int main (int argc, char** argv) {
         // Send OSC packet for Usine instrument.
         p.Clear();
         p << osc::BeginMessage(osc_cam_id.str().c_str());
-        for (int i=0; i<osc_data.size(); ++i) {
-            p << osc_data[i];
+        for (int i=0; i<GRID_HEIGHT; ++i) {
+            for (int j=0; j<GRID_WIDTH; ++j) {
+                p << active_grid.at<float>(i, j);
+            }
         }
         p << osc::EndMessage;
         transmitSocket.Send(p.Data(), p.Size());
