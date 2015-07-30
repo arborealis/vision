@@ -46,21 +46,22 @@ int main (int argc, char** argv) {
     char buffer[OUTPUT_BUFFER_SIZE];
     osc::OutboundPacketStream p(buffer, OUTPUT_BUFFER_SIZE);
     std::string osc_address_str;
-    std::string osc_grid_data;
     std::vector<float> osc_data;
 
     cv::VideoCapture cap;
     bool is_video_file = false;
 
-    long int cam_num;
+    long int cam_num = 0;
     if (argc > 1) {
         char* endptr;
         cam_num = strtol(argv[1], &endptr, 10);
         if (!*argv[1] || *endptr) {
+            std::cout << "Opening video file." << std::endl;
             cap.open(argv[1]);
             is_video_file = true;
+        } else {
+            cap.open(cam_num);
         }
-        cap.open(cam_num);
     } else {
         cap.open(0);
     }
@@ -69,8 +70,8 @@ int main (int argc, char** argv) {
     osc_cam_id << "/Arbor/Camera/" << cam_num << "/";
     cv::namedWindow(osc_cam_id.str().c_str(), CV_WINDOW_AUTOSIZE);
 
-    cap.set(CV_CAP_PROP_FRAME_WIDTH, 800);
-    cap.set(CV_CAP_PROP_FRAME_HEIGHT, 600);
+    cap.set(CV_CAP_PROP_FRAME_WIDTH, 640);
+    cap.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
     if (!cap.isOpened()) {
         std::cerr << "Cannot open video source" << std::endl;
         return -1;
@@ -88,15 +89,18 @@ int main (int argc, char** argv) {
     cv::Mat mg_orient(h, w, CV_32FC1, cv::Scalar(0, 0, 0));
     cv::Mat seg_mask(h, w, CV_32FC1, cv::Scalar(0, 0, 0));
     std::vector<cv::Rect> seg_bounds;
-    cv::Mat visual(h, w, CV_32FC3);
+    cv::Mat visual(h, w, CV_8UC3);
     cv::Mat silh_roi, orient_roi, mask_roi, mhi_roi;
+    cv::Mat rolling_avg = cv::Mat::zeros(GRID_HEIGHT+1, GRID_WIDTH+1,
+                                         CV_32F);
+    cv::Mat active_grid = cv::Mat::zeros(GRID_HEIGHT+1, GRID_WIDTH+1,
+                                         CV_32F);
 
     int frame_count = 0;
     time_t timer_begin, timer_end;
     time (&timer_begin);
 
     while (1) {
-        osc_grid_data = "";
         osc_data.clear();
 
 
@@ -148,11 +152,33 @@ int main (int argc, char** argv) {
                     int(i * GRID_SQUARE_HEIGHT),
                     int(GRID_SQUARE_WIDTH),
                     int(GRID_SQUARE_HEIGHT)));
-                float total = (float)cv::sum(sub_mat)[0];
-                activation.at<float>(i, j) = total / (float)(
+                float total_activated = (float)cv::sum(sub_mat)[0];
+                float percentage_activated = total_activated / (float)(
                     sub_mat.rows * 255 * sub_mat.cols);
+                activation.at<float>(i, j) = percentage_activated;
             }
+        }      
+
+        cv::Scalar mean_activation;
+        cv::Scalar stddev_activation;
+        cv::Mat mask = (activation > 0.1);
+        cv::meanStdDev(activation, mean_activation, stddev_activation, mask);
+
+        float cutoff_activation = (mean_activation.val[0] +
+                                    stddev_activation.val[0] * 0.5);
+        if (cutoff_activation < 0.1) {
+            cutoff_activation = 0.1;
         }
+
+        cv::threshold(activation, activation, cutoff_activation, 1.0,
+                      cv::THRESH_TOZERO);
+        cv::Mat cutoff_mask = (activation > cutoff_activation);
+        cv::normalize(activation, activation, 0.0, 1.0, cv::NORM_MINMAX,
+                      -1, mask);
+
+        active_grid = (active_grid * 0.6);
+        cv::threshold(active_grid, active_grid, 0.01, 1.0, cv::THRESH_TOZERO);
+        active_grid = cv::max(active_grid, activation);
 
         visual = frame.clone();
         cv::addWeighted(visual, 0.0,
@@ -172,44 +198,35 @@ int main (int argc, char** argv) {
                      cv::Point2i(int(i * GRID_SQUARE_WIDTH), h),
                      cv::Scalar(255, 255, 255));
         }
+
         // Paint activated boxes and construct osc grid.
         for (int i=0; i<GRID_HEIGHT; ++i) {
             for (int j=0; j<GRID_WIDTH; ++j) {
-                float activate_level = activation.at<float>(i, j);
-                if (activate_level < 0.1) {
-                    osc_grid_data += "0,";
-                    osc_data.push_back(0.0f);
-                    continue;
-                }
-                // construct osc string 
-                osc_grid_data += std::to_string(activate_level) + ",";
+                float activate_level = active_grid.at<float>(i, j);
+                // construct osc string
                 osc_data.push_back(activate_level);
-                cv::Mat active_rect(h, w, CV_32FC3);
-                cv::Rect display_rect(
-                    int(j * GRID_SQUARE_WIDTH),
-                    int(i * GRID_SQUARE_HEIGHT),
-                    int(GRID_SQUARE_WIDTH),
-                    int(GRID_SQUARE_HEIGHT));
-                cv::rectangle(
-                    visual,
-                    display_rect,
-                    cv::Scalar(255, 255, 255),
-                    CV_FILLED);
-                //cv::addWeighted(visual, 1.0,
-                //                active_rect, activate_level,
-                //                0.0, visual);
+                if (activate_level > 0.01) {
+                    cv::Rect display_rect(
+                        int(j * GRID_SQUARE_WIDTH),
+                        int(i * GRID_SQUARE_HEIGHT),
+                        int(GRID_SQUARE_WIDTH),
+                        int(GRID_SQUARE_HEIGHT));
+                    cv::Mat buffer = cv::Mat::zeros(h, w, CV_8UC3);
+                    cv::rectangle(
+                        buffer,
+                        display_rect,
+                        cv::Scalar(255, 255, 255),
+                        CV_FILLED);
+                    cv::addWeighted(
+                        visual, 1.0,
+                        buffer, activate_level,
+                        0.0, visual);
+                }
             }
         }
 
-        // Send OSC packet
+        // Send OSC packet for Usine instrument.
         p.Clear();
-        // Processing instrument
-        /*
-        p << osc::BeginMessage("/A/C1") 
-            << osc_grid_data.substr(0, osc_grid_data.size()-1).c_str()
-            << osc::EndMessage;
-        */
-        // Usine instrument.
         p << osc::BeginMessage(osc_cam_id.str().c_str());
         for (int i=0; i<osc_data.size(); ++i) {
             p << osc_data[i];
@@ -217,6 +234,7 @@ int main (int argc, char** argv) {
         p << osc::EndMessage;
         transmitSocket.Send(p.Data(), p.Size());
 
+        // Display activated squares overlayed on screen.
         cv::imshow(osc_cam_id.str().c_str(), visual);
         prev_frame = frame.clone();
 
