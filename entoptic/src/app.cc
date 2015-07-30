@@ -26,6 +26,9 @@ float MIN_TIME_DELTA = 5;
 int GRID_HEIGHT = 8;
 int GRID_WIDTH = 8;
 
+float CUTOFF_STDDEV = 0.5;
+float ACTIVATION_DECAY = 0.6;
+
 int main (int argc, char** argv) {
     // OSC setup
     std::string address = "127.0.0.1";
@@ -70,8 +73,8 @@ int main (int argc, char** argv) {
     osc_cam_id << "/Arbor/Camera/" << cam_num << "/";
     cv::namedWindow(osc_cam_id.str().c_str(), CV_WINDOW_AUTOSIZE);
 
-    cap.set(CV_CAP_PROP_FRAME_WIDTH, 640);
-    cap.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
+    cap.set(CV_CAP_PROP_FRAME_WIDTH, 800);
+    cap.set(CV_CAP_PROP_FRAME_HEIGHT, 600);
     if (!cap.isOpened()) {
         std::cerr << "Cannot open video source" << std::endl;
         return -1;
@@ -165,7 +168,7 @@ int main (int argc, char** argv) {
         cv::meanStdDev(activation, mean_activation, stddev_activation, mask);
 
         float cutoff_activation = (mean_activation.val[0] +
-                                    stddev_activation.val[0] * 0.5);
+                                   stddev_activation.val[0] * CUTOFF_STDDEV);
         if (cutoff_activation < 0.1) {
             cutoff_activation = 0.1;
         }
@@ -176,7 +179,7 @@ int main (int argc, char** argv) {
         cv::normalize(activation, activation, 0.0, 1.0, cv::NORM_MINMAX,
                       -1, mask);
 
-        active_grid = (active_grid * 0.6);
+        active_grid = (active_grid * ACTIVATION_DECAY);
         cv::threshold(active_grid, active_grid, 0.01, 1.0, cv::THRESH_TOZERO);
         active_grid = cv::max(active_grid, activation);
 
@@ -190,13 +193,13 @@ int main (int argc, char** argv) {
             cv::line(visual,
                      cv::Point2i(0, int(i * GRID_SQUARE_HEIGHT)),
                      cv::Point2i(w, int(i * GRID_SQUARE_HEIGHT)),
-                     cv::Scalar(255, 255, 255));
+                     cv::Scalar(200, 200, 200));
         }
         for (int i=1; i<GRID_WIDTH; ++i) {
             cv::line(visual,
                      cv::Point2i(int(i * GRID_SQUARE_WIDTH), 0),
                      cv::Point2i(int(i * GRID_SQUARE_WIDTH), h),
-                     cv::Scalar(255, 255, 255));
+                     cv::Scalar(200, 200, 200));
         }
 
         // Paint activated boxes and construct osc grid.
@@ -239,9 +242,23 @@ int main (int argc, char** argv) {
         prev_frame = frame.clone();
 
 	    ++frame_count;
-        if (cv::waitKey(30) >= 0) {
+
+        int key = cv::waitKey(1);
+        if (key == 27) {
             std::cout << "esc key is pressed by user" << std::endl;
             break;
+        } else if (key == (int)('q')) {
+            CUTOFF_STDDEV += 0.1;
+            std::cout << CUTOFF_STDDEV << std::endl;
+        } else if (key == (int)('a')) {
+            CUTOFF_STDDEV -= 0.1;
+            std::cout << CUTOFF_STDDEV << std::endl;
+        } else if (key == (int)('w')) {
+            ACTIVATION_DECAY += 0.1;
+            std::cout << ACTIVATION_DECAY << std::endl;
+        } else if (key == (int)('s')) {
+            ACTIVATION_DECAY -= 0.1;
+            std::cout << ACTIVATION_DECAY << std::endl;
         }
     }
 
