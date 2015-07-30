@@ -22,8 +22,8 @@ int DEFAULT_THRESHOLD = 16;
 float MAX_TIME_DELTA = 12500.0;
 float MIN_TIME_DELTA = 5;
 
-int GRID_HEIGHT = 10;
-int GRID_WIDTH = 20;
+int GRID_HEIGHT = 8;
+int GRID_WIDTH = 8;
 
 int main (int argc, char** argv) {
     // OSC setup
@@ -34,6 +34,7 @@ int main (int argc, char** argv) {
     osc::OutboundPacketStream p(buffer, OUTPUT_BUFFER_SIZE);
     std::string osc_address_str;
     std::string osc_grid_data;
+    std::vector<float> osc_data;
 
     cv::namedWindow("motion", CV_WINDOW_AUTOSIZE);
 
@@ -59,16 +60,23 @@ int main (int argc, char** argv) {
     int w = frame_size.width;
     double timestamp = 1000.0 * clock() / CLOCKS_PER_SEC;
     cv::Mat prev_frame = frame.clone();
-    cv::Mat motion_history(h, w, CV_32FC1, cv::Scalar(0,0,0));
-    cv::Mat mg_mask(h, w, CV_8UC1, cv::Scalar(0,0,0));
-    cv::Mat mg_orient(h, w, CV_32FC1, cv::Scalar(0,0,0));
-    cv::Mat seg_mask(h, w, CV_32FC1, cv::Scalar(0,0,0));
+    cv::Mat motion_history(h, w, CV_32FC1, cv::Scalar(0, 0, 0));
+    cv::Mat mg_mask(h, w, CV_8UC1, cv::Scalar(0, 0, 0));
+    cv::Mat mg_orient(h, w, CV_32FC1, cv::Scalar(0, 0, 0));
+    cv::Mat seg_mask(h, w, CV_32FC1, cv::Scalar(0, 0, 0));
     std::vector<cv::Rect> seg_bounds;
     cv::Mat visual(h, w, CV_32FC3);
     cv::Mat silh_roi, orient_roi, mask_roi, mhi_roi;
 
+    int frame_count = 0;
+    time_t timer_begin, timer_end;
+    time (&timer_begin);
+
     while (1) {
         osc_grid_data = "";
+        osc_data.clear();
+
+
         cap.read(frame);
         if (!frame.data) {
             if (is_video_file) {
@@ -147,10 +155,12 @@ int main (int argc, char** argv) {
                 float activate_level = activation.at<float>(i, j);
                 if (activate_level < 0.1) {
                     osc_grid_data += "0,";
+                    osc_data.push_back(0.0f);
                     continue;
                 }
                 // construct osc string 
                 osc_grid_data += std::to_string(activate_level) + ",";
+                osc_data.push_back(activate_level);
                 cv::Mat active_rect(h, w, CV_32FC3);
                 cv::Rect display_rect(
                     int(j * GRID_SQUARE_WIDTH),
@@ -170,20 +180,36 @@ int main (int argc, char** argv) {
 
         // Send OSC packet
         p.Clear();
+        // Processing instrument
+        /*
         p << osc::BeginMessage("/A/C1") 
             << osc_grid_data.substr(0, osc_grid_data.size()-1).c_str()
             << osc::EndMessage;
+        */
+        // Usine instrument.
+        p << osc::BeginMessage("/A/C1/");
+        for (int i=0; i<osc_data.size(); ++i) {
+            p << osc_data[i];
+        }
+        p << osc::EndMessage;
         transmitSocket.Send(p.Data(), p.Size());
 
         cv::imshow("motion", visual);
         prev_frame = frame.clone();
 
-
+	    ++frame_count;
         if (cv::waitKey(30) >= 0) {
             std::cout << "esc key is pressed by user" << std::endl;
-            break; 
+            break;
         }
     }
+
+    time (&timer_end);
+    double seconds_elapsed = difftime (timer_end, timer_begin);
+    std::cout << seconds_elapsed << " seconds for "
+	      << frame_count << "  frames : FPS = "
+	      <<  (float)((float)(frame_count) / seconds_elapsed)
+	      << std::endl;
 
     return 0;
 }
