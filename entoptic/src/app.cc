@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <cv.h>
+#include <cstdlib>
 #include <highgui.h>
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
@@ -27,25 +28,47 @@ int GRID_WIDTH = 8;
 
 int main (int argc, char** argv) {
     // OSC setup
-    const char* address = "127.0.0.1";
+    std::string address = "127.0.0.1";
     int port = 7000;
-    UdpTransmitSocket transmitSocket(IpEndpointName(address, port));
+    if (argc > 3) {
+        address = argv[2];
+        char* endptr;
+        port = strtol(argv[3], &endptr, 10);
+        if (!*argv[1] || *endptr) {
+            std::cerr << "WAT! '" << argv[3]
+                << "' can not be intepreted as a port number"
+                << std::endl;
+            return -1;
+        }
+    }
+
+    UdpTransmitSocket transmitSocket(IpEndpointName(address.c_str(), port));
     char buffer[OUTPUT_BUFFER_SIZE];
     osc::OutboundPacketStream p(buffer, OUTPUT_BUFFER_SIZE);
     std::string osc_address_str;
     std::string osc_grid_data;
     std::vector<float> osc_data;
 
-    cv::namedWindow("motion", CV_WINDOW_AUTOSIZE);
-
     cv::VideoCapture cap;
     bool is_video_file = false;
+
+    long int cam_num;
     if (argc > 1) {
-        cap.open(argv[1]);
-        is_video_file = true;
+        char* endptr;
+        cam_num = strtol(argv[1], &endptr, 10);
+        if (!*argv[1] || *endptr) {
+            cap.open(argv[1]);
+            is_video_file = true;
+        }
+        cap.open(cam_num);
     } else {
         cap.open(0);
     }
+
+    std::stringstream osc_cam_id;
+    osc_cam_id << "/Arbor/Camera/" << cam_num << "/";
+    cv::namedWindow(osc_cam_id.str().c_str(), CV_WINDOW_AUTOSIZE);
+
     cap.set(CV_CAP_PROP_FRAME_WIDTH, 800);
     cap.set(CV_CAP_PROP_FRAME_HEIGHT, 600);
     if (!cap.isOpened()) {
@@ -187,14 +210,14 @@ int main (int argc, char** argv) {
             << osc::EndMessage;
         */
         // Usine instrument.
-        p << osc::BeginMessage("/A/C1/");
+        p << osc::BeginMessage(osc_cam_id.str().c_str());
         for (int i=0; i<osc_data.size(); ++i) {
             p << osc_data[i];
         }
         p << osc::EndMessage;
         transmitSocket.Send(p.Data(), p.Size());
 
-        cv::imshow("motion", visual);
+        cv::imshow(osc_cam_id.str().c_str(), visual);
         prev_frame = frame.clone();
 
 	    ++frame_count;
