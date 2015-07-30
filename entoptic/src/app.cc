@@ -30,6 +30,9 @@ float MIN_ACTIVATION = 0.1;
 float CUTOFF_STDDEV = 0.5;
 float ACTIVATION_DECAY = 0.6;
 
+bool ON_SCREEN = true;
+bool OUTPUT_OSC = true;
+
 int main (int argc, char** argv) {
     // OSC setup
     std::string address = "127.0.0.1";
@@ -71,8 +74,11 @@ int main (int argc, char** argv) {
 
     std::stringstream osc_cam_id;
     osc_cam_id << "/Arbor/Camera/" << cam_num << "/";
-    cv::startWindowThread();
-    cv::namedWindow(osc_cam_id.str().c_str(), CV_WINDOW_AUTOSIZE);
+
+    if (ON_SCREEN) {
+        cv::startWindowThread();
+        cv::namedWindow(osc_cam_id.str().c_str(), CV_WINDOW_AUTOSIZE);
+    }
 
     cap.set(CV_CAP_PROP_FRAME_WIDTH, 800);
     cap.set(CV_CAP_PROP_FRAME_HEIGHT, 600);
@@ -105,8 +111,6 @@ int main (int argc, char** argv) {
     time (&timer_begin);
 
     while (1) {
-        osc_data.clear();
-
         cap.read(frame);
         if (!frame.data) {
             if (is_video_file) {
@@ -188,7 +192,7 @@ int main (int argc, char** argv) {
                         frame, 0.8,
                         0.0, visual);
 
-        {
+        if (ON_SCREEN) {
             // Paint grid lines on screen.
             cv::Mat buffer = cv::Mat::zeros(h, w, CV_8UC3);
 
@@ -210,45 +214,51 @@ int main (int argc, char** argv) {
                 0.0, visual);
         }
 
-        // Paint activated boxes and construct osc grid.
-        for (int i=0; i<GRID_HEIGHT; ++i) {
-            for (int j=0; j<GRID_WIDTH; ++j) {
-                float activate_level = active_grid.at<float>(i, j);
-                if (activate_level > 0.01) {
-                    cv::Rect display_rect(
-                        int(j * GRID_SQUARE_WIDTH),
-                        int(i * GRID_SQUARE_HEIGHT),
-                        int(GRID_SQUARE_WIDTH),
-                        int(GRID_SQUARE_HEIGHT));
-                    cv::Mat buffer = cv::Mat::zeros(h, w, CV_8UC3);
-                    cv::rectangle(
-                        buffer,
-                        display_rect,
-                        cv::Scalar(255, 255, 255),
-                        CV_FILLED);
-                    cv::addWeighted(
-                        visual, 1.0,
-                        buffer, activate_level,
-                        0.0, visual);
+        if (ON_SCREEN) {
+            // Paint activated boxes and construct osc grid.
+            for (int i=0; i<GRID_HEIGHT; ++i) {
+                for (int j=0; j<GRID_WIDTH; ++j) {
+                    float activate_level = active_grid.at<float>(i, j);
+                    if (activate_level > 0.01) {
+                        cv::Rect display_rect(
+                            int(j * GRID_SQUARE_WIDTH),
+                            int(i * GRID_SQUARE_HEIGHT),
+                            int(GRID_SQUARE_WIDTH),
+                            int(GRID_SQUARE_HEIGHT));
+                        cv::Mat buffer = cv::Mat::zeros(h, w, CV_8UC3);
+                        cv::rectangle(
+                            buffer,
+                            display_rect,
+                            cv::Scalar(255, 255, 255),
+                            CV_FILLED);
+                        cv::addWeighted(
+                            visual, 1.0,
+                            buffer, activate_level,
+                            0.0, visual);
+                    }
                 }
             }
         }
 
-        // Send OSC packet for Usine instrument.
-        p.Clear();
-        p << osc::BeginMessage(osc_cam_id.str().c_str());
-        for (int i=0; i<GRID_HEIGHT; ++i) {
-            for (int j=0; j<GRID_WIDTH; ++j) {
-                p << active_grid.at<float>(i, j);
+        if (OUTPUT_OSC) {
+            // Send OSC packet for Usine instrument.
+            p.Clear();
+            p << osc::BeginMessage(osc_cam_id.str().c_str());
+            for (int i=0; i<GRID_HEIGHT; ++i) {
+                for (int j=0; j<GRID_WIDTH; ++j) {
+                    p << active_grid.at<float>(i, j);
+                }
             }
+            p << osc::EndMessage;
+            transmitSocket.Send(p.Data(), p.Size());
         }
-        p << osc::EndMessage;
-        transmitSocket.Send(p.Data(), p.Size());
 
-        // Display activated squares overlayed on screen.
-        cv::imshow(osc_cam_id.str().c_str(), visual);
+        if (ON_SCREEN) {
+            // Display activated squares overlayed on screen.
+            cv::imshow(osc_cam_id.str().c_str(), visual);
+        }
+
         prev_frame = frame.clone();
-
 	    ++frame_count;
 
         int key = cv::waitKey(1);
