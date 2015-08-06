@@ -30,8 +30,14 @@ float MIN_ACTIVATION = 0.1;
 float CUTOFF_STDDEV = 0.5;
 float ACTIVATION_DECAY = 0.6;
 
+int COMPUTER_NUM = 0;
+
 bool ON_SCREEN = true;
+bool OUTPUT_GRID = true;
+bool OUTPUT_ACTIVATION = true;
 bool OUTPUT_OSC = true;
+int DISPLAY_STAGE = 0;
+int MAX_STAGE = 5;
 
 int main (int argc, char** argv) {
     // OSC setup
@@ -73,7 +79,7 @@ int main (int argc, char** argv) {
     }
 
     std::stringstream osc_cam_id;
-    osc_cam_id << "/Arbor/Camera/" << cam_num << "/";
+    osc_cam_id << "/Arbor/" << COMPUTER_NUM << "/Camera/" << cam_num << "/";
 
     if (ON_SCREEN) {
         cv::startWindowThread();
@@ -87,7 +93,8 @@ int main (int argc, char** argv) {
         return -1;
     }
 
-    cv::Mat frame, frame_diff, gray_diff, motion_mask;
+    cv::Mat frame, gray_frame, gray_diff, motion_mask, frame_diff;
+    cv::Mat scaled_motion_history, gray_scaled_motion_history;
     cap.read(frame);
     cv::Size frame_size = frame.size();
     int h = frame_size.height;
@@ -99,7 +106,7 @@ int main (int argc, char** argv) {
     cv::Mat mg_orient(h, w, CV_32FC1, cv::Scalar(0, 0, 0));
     cv::Mat seg_mask(h, w, CV_32FC1, cv::Scalar(0, 0, 0));
     std::vector<cv::Rect> seg_bounds;
-    cv::Mat visual(h, w, CV_8UC3);
+    cv::Mat visual = cv::Mat::zeros(h, w, CV_8UC3);
     cv::Mat silh_roi, orient_roi, mask_roi, mhi_roi;
     cv::Mat rolling_avg = cv::Mat::zeros(GRID_HEIGHT+1, GRID_WIDTH+1,
                                          CV_32F);
@@ -122,6 +129,7 @@ int main (int argc, char** argv) {
             }
         }
 
+        cv::cvtColor(frame, gray_frame, CV_BGR2GRAY);
         cv::absdiff(frame, prev_frame, frame_diff);
         cv::cvtColor(frame_diff, gray_diff, CV_BGR2GRAY);
         cv::threshold(gray_diff, motion_mask, DEFAULT_THRESHOLD, 255, 0);
@@ -187,12 +195,34 @@ int main (int argc, char** argv) {
         cv::threshold(active_grid, active_grid, 0.01, 1.0, cv::THRESH_TOZERO);
         active_grid = cv::max(active_grid, activation);
 
-        visual = frame.clone();
-        cv::addWeighted(visual, 0.0,
-                        frame, 0.8,
-                        0.0, visual);
+        // Pick the background.
+        switch (DISPLAY_STAGE) {
+            case 0:
+                visual = frame.clone();
+                break;
+            case 1:
+                cv::cvtColor(gray_frame, visual, CV_GRAY2BGR);
+                break;
+            case 2:
+                visual = frame_diff.clone();
+                break;
+            case 3:
+                cv::cvtColor(gray_diff, visual, CV_GRAY2BGR);
+                break;
+            case 4:
+                cv::cvtColor(motion_mask, visual, CV_GRAY2BGR);
+                break;
+            case 5:
+                scaled_motion_history = motion_history * 1.0/255.0;
+                scaled_motion_history.convertTo(gray_scaled_motion_history, CV_8UC3);
+                cv::cvtColor(gray_scaled_motion_history,
+                             visual, CV_GRAY2BGR);
+                break;
+            default:
+                visual = frame.clone();
+        }
 
-        if (ON_SCREEN) {
+        if (ON_SCREEN && OUTPUT_GRID) {
             // Paint grid lines on screen.
             cv::Mat buffer = cv::Mat::zeros(h, w, CV_8UC3);
 
@@ -214,7 +244,7 @@ int main (int argc, char** argv) {
                 0.0, visual);
         }
 
-        if (ON_SCREEN) {
+        if (ON_SCREEN && OUTPUT_ACTIVATION) {
             // Paint activated boxes and construct osc grid.
             for (int i=0; i<GRID_HEIGHT; ++i) {
                 for (int j=0; j<GRID_WIDTH; ++j) {
@@ -266,17 +296,25 @@ int main (int argc, char** argv) {
             std::cout << "esc key is pressed by user" << std::endl;
             break;
         } else if (key == (int)('q')) {
-            CUTOFF_STDDEV += 0.1;
+            CUTOFF_STDDEV += 0.01;
             std::cout << CUTOFF_STDDEV << std::endl;
         } else if (key == (int)('a')) {
-            CUTOFF_STDDEV -= 0.1;
+            CUTOFF_STDDEV -= 0.01;
             std::cout << CUTOFF_STDDEV << std::endl;
         } else if (key == (int)('w')) {
-            ACTIVATION_DECAY += 0.1;
+            ACTIVATION_DECAY += 0.01;
             std::cout << ACTIVATION_DECAY << std::endl;
         } else if (key == (int)('s')) {
-            ACTIVATION_DECAY -= 0.1;
+            ACTIVATION_DECAY -= 0.01;
             std::cout << ACTIVATION_DECAY << std::endl;
+        } else if (key == (int)('e')) {
+            if (DISPLAY_STAGE < MAX_STAGE)
+                DISPLAY_STAGE += 1;
+            std::cout << DISPLAY_STAGE << std::endl;
+        } else if (key == (int)('d')) {
+            if (DISPLAY_STAGE > 0)
+                DISPLAY_STAGE -= 1;
+            std::cout << DISPLAY_STAGE << std::endl;
         }
     }
 
