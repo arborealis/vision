@@ -34,7 +34,7 @@ float MIN_ACTIVATION = 0.1;
 float CUTOFF_STDDEV = 0.5;
 float ACTIVATION_DECAY = 0.9;
 
-int COMPUTER_NUM = 1;
+int COMPUTER_NUM = 0;
 
 bool ON_SCREEN = true;
 bool OUTPUT_GRID = true;
