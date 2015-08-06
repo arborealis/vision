@@ -189,7 +189,7 @@ int main (int argc, char** argv) {
                       cv::THRESH_TOZERO);
         cv::Mat cutoff_mask = (activation > cutoff_activation);
         cv::normalize(activation, activation, 0.0, 1.0, cv::NORM_MINMAX,
-                      -1, mask);
+                      -1, cutoff_mask);
 
         active_grid = (active_grid * ACTIVATION_DECAY);
         cv::threshold(active_grid, active_grid, 0.01, 1.0, cv::THRESH_TOZERO);
@@ -293,7 +293,7 @@ int main (int argc, char** argv) {
 
         int key = cv::waitKey(1);
         if (key == 27) {
-            std::cout << "esc key is pressed by user" << std::endl;
+            std::cout << "esc key pressed by user" << std::endl;
             break;
         } else if (key == (int)('q')) {
             CUTOFF_STDDEV += 0.01;
