@@ -15,6 +15,8 @@
 #include <sstream>
 #include <chrono>
 #include <thread>
+#include <deque>
+#include <numeric>
 
 #define OUTPUT_BUFFER_SIZE 1024 * 4
 
@@ -38,6 +40,9 @@ bool OUTPUT_ACTIVATION = true;
 bool OUTPUT_OSC = true;
 int DISPLAY_STAGE = 0;
 int MAX_STAGE = 5;
+
+float MIN_TEMPO = 80.0;
+float MAX_TEMPO = 170.0;
 
 int main (int argc, char** argv) {
     // OSC setup
@@ -81,6 +86,9 @@ int main (int argc, char** argv) {
     std::stringstream osc_cam_id;
     osc_cam_id << "/Arbor/" << COMPUTER_NUM << "/Camera/" << cam_num << "/";
 
+    std::stringstream osc_tempo_id;
+    osc_tempo_id << "/Arbor/" << COMPUTER_NUM << "/Tempo/" << cam_num << "/";
+
     if (ON_SCREEN) {
         cv::startWindowThread();
         cv::namedWindow(osc_cam_id.str().c_str(), CV_WINDOW_AUTOSIZE);
@@ -112,6 +120,8 @@ int main (int argc, char** argv) {
                                          CV_32F);
     cv::Mat active_grid = cv::Mat::zeros(GRID_HEIGHT+1, GRID_WIDTH+1,
                                          CV_32F);
+    std::deque<float> energies(1000, 0.0f);
+    int tempo = 0;
 
     int frame_count = 0;
     time_t timer_begin, timer_end;
@@ -188,6 +198,16 @@ int main (int argc, char** argv) {
         cv::threshold(activation, activation, cutoff_activation, 1.0,
                       cv::THRESH_TOZERO);
         cv::Mat cutoff_mask = (activation > cutoff_activation);
+        int num_activated = cv::countNonZero(cutoff_mask);
+        float energy = (float)num_activated / cutoff_mask.total();
+        energies.pop_front();
+        energies.push_back(energy);
+        float total_energy = 0.0f;
+        for (float e : energies) {
+            total_energy += e;
+        }
+        float rolling_avg_energy = total_energy / (float)energies.size();
+        tempo = (int)((MAX_TEMPO - MIN_TEMPO) * (rolling_avg_energy))/(1.0) + MIN_TEMPO;
         cv::normalize(activation, activation, 0.0, 1.0, cv::NORM_MINMAX,
                       -1, cutoff_mask);
 
@@ -279,6 +299,12 @@ int main (int argc, char** argv) {
                     p << active_grid.at<float>(i, j);
                 }
             }
+            p << osc::EndMessage;
+            transmitSocket.Send(p.Data(), p.Size());
+
+            p.Clear();
+            p << osc::BeginMessage(osc_tempo_id.str().c_str());
+            p << tempo;
             p << osc::EndMessage;
             transmitSocket.Send(p.Data(), p.Size());
         }
