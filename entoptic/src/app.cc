@@ -28,11 +28,13 @@ float MIN_TIME_DELTA = 5;
 int GRID_HEIGHT = 8;
 int GRID_WIDTH = 8;
 
+float ENERGY_ACTIVATION = 0.1;
+
 float MIN_ACTIVATION = 0.1;
 float CUTOFF_STDDEV = 0.5;
-float ACTIVATION_DECAY = 0.6;
+float ACTIVATION_DECAY = 0.9;
 
-int COMPUTER_NUM = 0;
+int COMPUTER_NUM = 1;
 
 bool ON_SCREEN = true;
 bool OUTPUT_GRID = true;
@@ -41,7 +43,7 @@ bool OUTPUT_OSC = true;
 int DISPLAY_STAGE = 0;
 int MAX_STAGE = 5;
 
-float MIN_TEMPO = 80.0;
+float MIN_TEMPO = 65.0;
 float MAX_TEMPO = 170.0;
 
 int main (int argc, char** argv) {
@@ -120,7 +122,7 @@ int main (int argc, char** argv) {
                                          CV_32F);
     cv::Mat active_grid = cv::Mat::zeros(GRID_HEIGHT+1, GRID_WIDTH+1,
                                          CV_32F);
-    std::deque<float> energies(1000, 0.0f);
+    std::deque<float> energies(100, 0.0f);
     int tempo = 0;
 
     int frame_count = 0;
@@ -184,6 +186,18 @@ int main (int argc, char** argv) {
             }
         }      
 
+        cv::Mat energy_mask = (activation > ENERGY_ACTIVATION);
+        int num_activated = cv::countNonZero(energy_mask);
+        float energy = (float)num_activated / energy_mask.total();
+        energies.pop_front();
+        energies.push_back(energy);
+        float total_energy = 0.0f;
+        for (float e : energies) {
+            total_energy += e;
+        }
+        float rolling_avg_energy = total_energy / (float)energies.size();
+        tempo = (int)(((MAX_TEMPO - MIN_TEMPO) * (rolling_avg_energy)) + MIN_TEMPO);
+
         cv::Scalar mean_activation;
         cv::Scalar stddev_activation;
         cv::Mat mask = (activation > MIN_ACTIVATION);
@@ -198,16 +212,6 @@ int main (int argc, char** argv) {
         cv::threshold(activation, activation, cutoff_activation, 1.0,
                       cv::THRESH_TOZERO);
         cv::Mat cutoff_mask = (activation > cutoff_activation);
-        int num_activated = cv::countNonZero(cutoff_mask);
-        float energy = (float)num_activated / cutoff_mask.total();
-        energies.pop_front();
-        energies.push_back(energy);
-        float total_energy = 0.0f;
-        for (float e : energies) {
-            total_energy += e;
-        }
-        float rolling_avg_energy = total_energy / (float)energies.size();
-        tempo = (int)((MAX_TEMPO - MIN_TEMPO) * (rolling_avg_energy))/(1.0) + MIN_TEMPO;
         cv::normalize(activation, activation, 0.0, 1.0, cv::NORM_MINMAX,
                       -1, cutoff_mask);
 
