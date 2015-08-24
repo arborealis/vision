@@ -17,10 +17,14 @@ Only tested on mac. Your milage may vary translating these steps to other enviro
   * ```ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"```
 * git
  * ```brew install git```
-* cmake
- * ```brew install cmake```
+* cmake and pkg-config
+ * ```brew install cmake pkg-config```
 * boost
  * ```brew install boost```
+* opencv
+ * ```brew install eigen ffmpeg openexr tbb``` 
+ * ```brew tap homebrew/science```
+ * ```brew install opencv```
 
 
 ### Installation
